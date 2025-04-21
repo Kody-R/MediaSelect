@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Select Shows and Movies</title>
+<link rel="stylesheet" href="select.css">
+</head>
+<body>
+<h1>Select Your Favorite Movies</h1>
+<select id="genreFilter" onchange="filterByGenre()">
+    <option value="All">All Genres</option>
+    <!-- Genre options will be loaded here -->
+</select>
+<button onclick="selectAllVisible(true)">Select All</button>
+<button onclick="selectAllVisible(false)">Deselect All</button>
+<form id="movieForm">
+    <!-- Movie checkboxes will be loaded here -->
+</form>
+<button type="button" onclick="downloadSelections()">Download Selections</button>
+
+<script src="select.js"></script>
+</body>
+</html>

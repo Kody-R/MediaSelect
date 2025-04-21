@@ -69,6 +69,8 @@ select {
   padding: 8px;
   border-radius: 6px;
   transition: background-color 0.2s;
+  display: block;
+  margin-bottom: 8px;
 }
 
 .movie-form label:hover {

@@ -51,7 +51,7 @@ function renderMovies(movieList) {
         checkbox.addEventListener('change', updateSelectedCount);
 
         label.appendChild(checkbox);
-        label.appendChild(document.createTextNode(`${movie.title} (${movie.year}) - ${movie.genre}`));
+        label.appendChild(document.createTextNode(`${movie.title} (${movie.year})`));
         movieForm.appendChild(label);
     });
 

@@ -49,6 +49,9 @@
       padding: 20px;
       border-radius: 10px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      max-height: 400px;
+      overflow-y: auto;
+      scroll-behavior: smooth;
     }
 
     .movie {
@@ -104,36 +107,24 @@
   </div>
 
   <div id="movieList"></div>
-  <div id="summary">Selected: 0 | Total Size: 0 GB</div>
+  <div id="summary">Total Selected: 0 | Total Size: 0 GB</div>
 
   <script>
     let mediaType = 'movies';
     let movies = [];
-    let selectedMap = new Map();
-    let totalSize = 0;
-    let downloadRequired = false;
 
-    document.addEventListener('DOMContentLoaded', function () {
+    const selectedData = {
+      movies: new Map(),
+      tvshows: new Map()
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
       loadCSV();
     });
 
     function switchMediaType() {
-      if (downloadRequired && selectedMap.size > 0) {
-        alert('Please download your selections before switching to a different media type.');
-        document.getElementById('mediaType').value = mediaType;
-        return;
-      }
       mediaType = document.getElementById('mediaType').value;
-      resetSelections();
       loadCSV();
-    }
-
-    function resetSelections() {
-      movies = [];
-      selectedMap.clear();
-      totalSize = 0;
-      updateSummary();
-      downloadRequired = false;
     }
 
     function loadCSV() {
@@ -153,6 +144,7 @@
         return { title, size: parseFloat(size) };
       });
       renderMovies();
+      updateSummary();
     }
 
     function renderMovies() {
@@ -165,6 +157,7 @@
 
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
+        checkbox.checked = selectedData[mediaType].has(movie.title);
         checkbox.onchange = () => handleSelect(movie, checkbox);
 
         const label = document.createElement('label');
@@ -176,52 +169,75 @@
       });
     }
 
+    function getTotalSize() {
+      let total = 0;
+      for (let type in selectedData) {
+        selectedData[type].forEach(size => {
+          total += size;
+        });
+      }
+      return total;
+    }
+
+    function getTotalCount() {
+      return [...selectedData.movies.keys()].length + [...selectedData.tvshows.keys()].length;
+    }
+
     function handleSelect(movie, checkbox) {
       if (checkbox.checked) {
-        if (totalSize + movie.size > 1000) {
-          alert("Total size limit exceeded (1000 GB)!");
+        const newTotalSize = getTotalSize() + movie.size;
+        if (newTotalSize > 930) {
+          alert("Total size limit exceeded!");
           checkbox.checked = false;
-        } else {
-          selectedMap.set(movie.title, movie.size);
-          totalSize += movie.size;
+          return;
         }
+        selectedData[mediaType].set(movie.title, movie.size);
       } else {
-        selectedMap.delete(movie.title);
-        totalSize -= movie.size;
+        selectedData[mediaType].delete(movie.title);
       }
-
       updateSummary();
-      downloadRequired = selectedMap.size > 0;
     }
 
     function updateSummary() {
       document.getElementById('summary').textContent =
-        `Selected: ${selectedMap.size} | Total Size: ${totalSize.toFixed(2)} GB`;
+        `Total Selected: ${getTotalCount()} | Total Size: ${getTotalSize().toFixed(2)} GB`;
     }
 
     function downloadSelection() {
-      if (selectedMap.size === 0) {
-        alert("No selections to download!");
-        return;
-      }
+        const lines = [];
 
-      const lines = [];
-      selectedMap.forEach((size, title) => {
-        lines.push(`${title} (${size} GB)`);
-      });
-      lines.push(`\nTotal Selected: ${selectedMap.size}`);
-      lines.push(`Total Size: ${totalSize.toFixed(2)} GB`);
-
-      const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = `${mediaType}_selection.txt`;
-      link.click();
-
-      // Reset after download
-      resetSelections();
-      renderMovies();
+        // Movies section
+        lines.push("=== Movies ===");
+        selectedData.movies.forEach((size, title) => {
+          lines.push(`${title} (${size} GB)`);
+        });
+        lines.push(`\nTotal Movies: ${selectedData.movies.size}`);
+        const movieTotal = [...selectedData.movies.values()].reduce((a, b) => a + b, 0);
+        lines.push(`Total Movie Size: ${movieTotal.toFixed(2)} GB\n`);
+    
+        // TV Shows section
+        lines.push("=== TV Shows ===");
+        selectedData.tvshows.forEach((size, title) => {
+          lines.push(`${title} (${size} GB)`);
+        });
+        lines.push(`\nTotal TV Shows: ${selectedData.tvshows.size}`);
+        const showTotal = [...selectedData.tvshows.values()].reduce((a, b) => a + b, 0);
+        lines.push(`Total TV Show Size: ${showTotal.toFixed(2)} GB\n`);
+    
+        // Overall summary
+        lines.push('--- Overall ---');
+        const totalCount = selectedData.movies.size + selectedData.tvshows.size;
+        const totalSize = movieTotal + showTotal;
+        lines.push(`Total Selections: ${totalCount}`);
+        lines.push(`Total Size: ${totalSize.toFixed(2)} GB`);
+    
+        const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'all_selections.txt';
+        link.click();
     }
+
   </script>
 </body>
 </html>
